@@ -6,11 +6,13 @@ const { Pool } = require('pg');
 const http = require('http');
 const WebSocket = require('ws');
 const cors = require('cors');
-
+const path = require('path');
 const app = express();
 const server = http.createServer(app);
 const wss = new WebSocket.Server({ server });
 
+// Express가 src/public 폴더 내의 정적 파일(index.html 등)을 루트 경로에서 자동으로 읽어가도록 설정
+app.use(express.static(path.join(__dirname, 'public')));
 app.use(cors());
 app.use(express.json());
 
