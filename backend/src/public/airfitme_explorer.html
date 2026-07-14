@@ -1,1 +1,701 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AIRFITME FRMS | 항공 안전 통합 관제 시스템</title>
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js CDN for visual data representation -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- FontAwesome Icons for Premium Interface -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;600;800&display=swap');
+        
+        body {
+            font-family: 'Pretendard', sans-serif;
+            background-color: #f8fafc;
+            color: #1e293b;
+            scroll-behavior: smooth;
+        }
 
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 100%;
+            height: 300px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(226, 232, 240, 0.8);
+            transition: all 0.3s ease;
+        }
+
+        .glass-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
+        }
+
+        .nav-item.active {
+            background-color: #0ea5e9;
+            color: white;
+            box-shadow: 0 4px 12px rgba(14, 165, 233, 0.3);
+        }
+
+        .status-pulse {
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(0.95); opacity: 1; }
+            70% { transform: scale(1.1); opacity: 0.7; }
+            100% { transform: scale(0.95); opacity: 1; }
+        }
+
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.4s ease-out;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="overflow-x-hidden">
+
+<div class="flex flex-col lg:flex-row min-h-screen">
+    
+    <!-- Sidebar Navigation -->
+    <nav class="w-full lg:w-72 bg-slate-900 text-slate-300 p-6 flex flex-col shrink-0">
+        <div class="flex items-center space-x-3 mb-10 px-2">
+            <div class="w-10 h-10 bg-sky-500 rounded-lg flex items-center justify-center text-white text-xl">
+                <i class="fa-solid fa-plane-shield"></i>
+            </div>
+            <span class="text-xl font-extrabold tracking-tight text-white">AIRFITME</span>
+        </div>
+
+        <div class="space-y-2 flex-grow">
+            <button onclick="switchTab('dashboard')" class="nav-item active w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all">
+                <i class="fa-solid fa-chart-line w-5"></i>
+                <span>통합 대시보드</span>
+            </button>
+            <button onclick="switchTab('biometrics')" class="nav-item w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all hover:bg-slate-800">
+                <i class="fa-solid fa-heart-pulse w-5"></i>
+                <span>생체 데이터 분석</span>
+            </button>
+            <button onclick="switchTab('environment')" class="nav-item w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all hover:bg-slate-800">
+                <i class="fa-solid fa-wind w-5"></i>
+                <span>기내 환경 및 가스</span>
+            </button>
+            <button onclick="switchTab('safety')" class="nav-item w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all hover:bg-slate-800">
+                <i class="fa-solid fa-shield-halved w-5"></i>
+                <span>안전 대응 프로토콜</span>
+            </button>
+            <button onclick="switchTab('simulator')" class="nav-item w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all hover:bg-slate-800">
+                <i class="fa-solid fa-laptop-code w-5"></i>
+                <span>라이브 시뮬레이터</span>
+            </button>
+        </div>
+
+        <div class="mt-auto pt-6 border-t border-slate-800">
+            <div class="bg-slate-800/50 p-4 rounded-xl">
+                <div class="text-[10px] uppercase tracking-widest text-slate-500 font-bold mb-2">System Status</div>
+                <div class="flex items-center space-x-2 text-xs">
+                    <div class="w-2 h-2 bg-emerald-500 rounded-full status-pulse"></div>
+                    <span class="text-slate-300 font-medium">GCS Server Connected</span>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content Area -->
+    <main class="flex-grow p-4 lg:p-10 max-h-screen overflow-y-auto bg-[#f1f5f9]">
+
+        <!-- Tab: Dashboard -->
+        <section id="dashboard" class="tab-content active">
+            <div class="mb-8">
+                <h1 class="text-3xl font-black text-slate-900 mb-2">시스템 통합 대시보드</h1>
+                <p class="text-slate-500 leading-relaxed max-w-3xl">
+                    AIRFITME FRMS는 항공기 객실승무원의 생체 정보와 기내 환경 데이터를 실시간으로 결합하여 비행 안전을 보장하는 지능형 솔루션입니다. 
+                    본 섹션에서는 현재 운항 중인 승무원단의 안전 상태 요약과 핵심 피로 위험 지수를 한눈에 파악할 수 있습니다.
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+                <div class="glass-card p-6 rounded-2xl border-b-4 border-sky-500 bg-white">
+                    <div class="text-slate-500 text-xs font-bold uppercase mb-2">모니터링 승무원</div>
+                    <div class="flex items-baseline space-x-2">
+                        <span class="text-3xl font-black text-slate-900">124</span>
+                        <span class="text-sm text-emerald-600 font-bold"><i class="fa-solid fa-caret-up"></i> 12</span>
+                    </div>
+                </div>
+                <div class="glass-card p-6 rounded-2xl border-b-4 border-amber-500 bg-white">
+                    <div class="text-slate-500 text-xs font-bold uppercase mb-2">주의 필요 (ELEVATED)</div>
+                    <div class="flex items-baseline space-x-2">
+                        <span class="text-3xl font-black text-slate-900">8</span>
+                        <span class="text-sm text-amber-600 font-bold">전체 6.4%</span>
+                    </div>
+                </div>
+                <div class="glass-card p-6 rounded-2xl border-b-4 border-red-500 bg-white">
+                    <div class="text-slate-500 text-xs font-bold uppercase mb-2">위험 발생 (CRITICAL)</div>
+                    <div class="flex items-baseline space-x-2">
+                        <span class="text-3xl font-black text-slate-900">1</span>
+                        <span class="text-sm text-red-600 font-bold status-pulse">조치 필요</span>
+                    </div>
+                </div>
+                <div class="glass-card p-6 rounded-2xl border-b-4 border-emerald-500 bg-white">
+                    <div class="text-slate-500 text-xs font-bold uppercase mb-2">가스 농도 지수</div>
+                    <div class="flex items-baseline space-x-2">
+                        <span class="text-3xl font-black text-slate-900">Clean</span>
+                        <span class="text-sm text-emerald-600 font-bold">12ppb (TVOC)</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div class="glass-card p-8 rounded-3xl bg-white">
+                    <h3 class="text-xl font-bold text-slate-900 mb-6 flex items-center">
+                        <i class="fa-solid fa-chart-area text-sky-500 mr-3"></i>실시간 피로 지수 분포 (Fleet Average)
+                    </h3>
+                    <div class="chart-container">
+                        <canvas id="fleetFatigueChart"></canvas>
+                    </div>
+                </div>
+                <div class="glass-card p-8 rounded-3xl flex flex-col bg-white">
+                    <h3 class="text-xl font-bold text-slate-900 mb-6 flex items-center">
+                        <i class="fa-solid fa-triangle-exclamation text-amber-500 mr-3"></i>최근 안전 이벤트 로그
+                    </h3>
+                    <div class="space-y-4 flex-grow">
+                        <div class="flex items-center p-4 bg-red-50 border border-red-100 rounded-xl">
+                            <div class="w-10 h-10 bg-red-500 text-white rounded-lg flex items-center justify-center mr-4">
+                                <i class="fa-solid fa-person-falling"></i>
+                            </div>
+                            <div class="flex-grow">
+                                <div class="text-sm font-bold text-slate-900">이서진 승무원 낙상 감지</div>
+                                <div class="text-xs text-slate-500">KE017 편 | 12:42 PM</div>
+                            </div>
+                            <span class="text-[10px] bg-red-200 text-red-700 px-2 py-1 rounded font-bold">URGENT</span>
+                        </div>
+                        <div class="flex items-center p-4 bg-amber-50 border border-amber-100 rounded-xl">
+                            <div class="w-10 h-10 bg-amber-500 text-white rounded-lg flex items-center justify-center mr-4">
+                                <i class="fa-solid fa-lungs"></i>
+                            </div>
+                            <div class="flex-grow">
+                                <div class="text-sm font-bold text-slate-900">eCO2 농도 주의 한계 초과</div>
+                                <div class="text-xs text-slate-500">KE907 편 | 11:15 AM</div>
+                            </div>
+                            <span class="text-[10px] bg-amber-200 text-amber-700 px-2 py-1 rounded font-bold">WARNING</span>
+                        </div>
+                        <div class="flex items-center p-4 bg-slate-100 border border-slate-200 rounded-xl">
+                            <div class="w-10 h-10 bg-slate-400 text-white rounded-lg flex items-center justify-center mr-4">
+                                <i class="fa-solid fa-check-double"></i>
+                            </div>
+                            <div class="flex-grow">
+                                <div class="text-sm font-bold text-slate-900">김선수 사무장 휴식 조치 완료</div>
+                                <div class="text-xs text-slate-500">KE017 편 | 10:30 AM</div>
+                            </div>
+                            <span class="text-[10px] bg-slate-200 text-slate-600 px-2 py-1 rounded font-bold">RESOLVED</span>
+                        </div>
+                    </div>
+                    <button class="mt-6 w-full py-3 bg-slate-900 text-white rounded-xl text-sm font-bold hover:bg-slate-800 transition-colors">전체 로그 보기</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Tab: Biometrics -->
+        <section id="biometrics" class="tab-content">
+            <div class="mb-8">
+                <h1 class="text-3xl font-black text-slate-900 mb-2">생체 데이터 및 피로 산출 로직</h1>
+                <p class="text-slate-500 leading-relaxed max-w-3xl">
+                    스마트워치와 체스트 벨트에서 수집된 다각도 생체 징후를 결합하여 승무원의 피로도를 정량화합니다. 
+                    특히 심박변이도(HRV)와 산소포화도(SpO2)의 상관관계를 통해 고고도 환경에서의 뇌 저산소증 위험을 선제적으로 감지합니다.
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+                <div class="lg:col-span-2 glass-card p-8 rounded-3xl bg-white">
+                    <h3 class="text-xl font-bold text-slate-900 mb-6">피로 위험 점수 (F) 산출 공식</h3>
+                    <div class="bg-slate-900 p-8 rounded-2xl text-sky-400 font-mono text-lg overflow-x-auto mb-6">
+                        F = w₁·A(HRV) + w₂·B(RR) + w₃·C(SpO2) + w₄·D(SL) + w₅·E(Turb)
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                        <div class="p-4 bg-slate-50 rounded-xl border border-slate-200">
+                            <div class="font-bold text-slate-900 mb-1">A(HRV)</div>
+                            <p class="text-slate-500">심박 변이도 하락 시 점수 상승 (정신적 스트레스 반영)</p>
+                        </div>
+                        <div class="p-4 bg-slate-50 rounded-xl border border-slate-200">
+                            <div class="font-bold text-slate-900 mb-1">C(SpO2)</div>
+                            <p class="text-slate-500">산소포화도 95% 이하 시 가중치 급증 (저산소증 예방)</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="glass-card p-8 rounded-3xl flex flex-col justify-center items-center text-center bg-white">
+                    <h3 class="text-lg font-bold text-slate-900 mb-4">현재 분석 가중치 (w)</h3>
+                    <div class="chart-container h-48">
+                        <canvas id="weightPieChart"></canvas>
+                    </div>
+                    <p class="text-xs text-slate-400 mt-4">비행 패턴 및 승무원 연령대에 따라 AI가 가중치를 자동 조정합니다.</p>
+                </div>
+            </div>
+
+            <div class="glass-card p-8 rounded-3xl bg-white">
+                <h3 class="text-xl font-bold text-slate-900 mb-6 flex items-center">
+                    <i class="fa-solid fa-wave-square text-sky-500 mr-3"></i>실시간 생체 징후 스트리밍 시뮬레이션
+                </h3>
+                <div class="chart-container h-64">
+                    <canvas id="biometricStreamChart"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <!-- Tab: Environment -->
+        <section id="environment" class="tab-content">
+            <div class="mb-8">
+                <h1 class="text-3xl font-black text-slate-900 mb-2">기내 환경 및 유해가스 감지</h1>
+                <p class="text-slate-500 leading-relaxed max-w-3xl">
+                    IoT-x Chest Belt에 탑재된 4대 가스 센서 어레이를 통해 기내 환기 정체, 엔진 오일 연소 가스 누출, 승무원의 음주 여부를 정밀 모니터링합니다. 
+                    밀폐된 기내 환경에서의 가스 축적은 승무원의 판단력에 치명적인 영향을 미칩니다.
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+                <div class="glass-card p-8 rounded-3xl bg-white">
+                    <h3 class="text-xl font-bold text-slate-900 mb-6">가스별 위험 임계치 분석</h3>
+                    <div class="chart-container h-64">
+                        <canvas id="gasThresholdChart"></canvas>
+                    </div>
+                </div>
+                <div class="glass-card p-8 rounded-3xl bg-white">
+                    <h3 class="text-xl font-bold text-slate-900 mb-6">센서 감지 대상 및 인체 영향</h3>
+                    <div class="space-y-6">
+                        <div class="flex items-start space-x-4">
+                            <div class="w-12 h-12 rounded-xl bg-sky-100 flex items-center justify-center text-sky-600 shrink-0">
+                                <span class="font-bold">CO₂</span>
+                            </div>
+                            <div>
+                                <div class="font-bold text-slate-900">이산화탄소 (eCO₂)</div>
+                                <p class="text-xs text-slate-500">1,000ppm 초과 시 졸음, 2,000ppm 도달 시 판단력 감퇴 및 인지 연산 능력 40% 하락.</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start space-x-4">
+                            <div class="w-12 h-12 rounded-xl bg-amber-100 flex items-center justify-center text-amber-600 shrink-0">
+                                <span class="font-bold">VOC</span>
+                            </div>
+                            <div>
+                                <div class="font-bold text-slate-900">휘발성 유기화합물 (TVOC)</div>
+                                <p class="text-xs text-slate-500">30ppb 초과 시 호흡기 손상 및 평형감각 왜곡 유발. 엔진 오일 유증기 감지 핵심 지표.</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start space-x-4">
+                            <div class="w-12 h-12 rounded-xl bg-red-100 flex items-center justify-center text-red-600 shrink-0">
+                                <span class="font-bold">Alc</span>
+                            </div>
+                            <div>
+                                <div class="font-bold text-slate-900">에탄올 (Ethanol)</div>
+                                <p class="text-xs text-slate-500">비행 전/중 승무원의 호기를 통한 알코올 농도 체크 및 기내 유해 화학 성분 감지.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Tab: Safety Protocol -->
+        <section id="safety" class="tab-content">
+            <div class="mb-8">
+                <h1 class="text-3xl font-black text-slate-900 mb-2">안전 대응 프로토콜 (SOS)</h1>
+                <p class="text-slate-500 leading-relaxed max-w-3xl">
+                    낙상 사고나 의식 불명 등 중대 위험 발생 시 시스템은 3축 자이로 센서와 심박수 변화를 결합하여 상황을 확정합니다. 
+                    확정된 위험은 즉각 지상 관제 센터(GCS)로 전송되며 골든타임 내 조치를 유도합니다.
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-4 gap-4 mb-10">
+                <div class="p-6 bg-white rounded-2xl border border-slate-200 text-center relative overflow-hidden group">
+                    <div class="text-4xl text-slate-200 absolute -top-2 -right-2 font-black group-hover:text-sky-500/10 transition-colors">01</div>
+                    <div class="w-12 h-12 bg-sky-500 text-white rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fa-solid fa-burst"></i>
+                    </div>
+                    <div class="font-bold text-slate-900 mb-1">충격 감지</div>
+                    <p class="text-xs text-slate-500">G-Force 임계값 초과 물리적 충격 발생</p>
+                </div>
+                <div class="p-6 bg-white rounded-2xl border border-slate-200 text-center relative overflow-hidden group">
+                    <div class="text-4xl text-slate-200 absolute -top-2 -right-2 font-black group-hover:text-amber-500/10 transition-colors">02</div>
+                    <div class="w-12 h-12 bg-amber-500 text-white rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fa-solid fa-arrows-to-circle"></i>
+                    </div>
+                    <div class="font-bold text-slate-900 mb-1">자세 분석</div>
+                    <p class="text-xs text-slate-500">자이로 센서상 80도 이상 경사(누움) 확인</p>
+                </div>
+                <div class="p-6 bg-white rounded-2xl border border-slate-200 text-center relative overflow-hidden group">
+                    <div class="text-4xl text-slate-200 absolute -top-2 -right-2 font-black group-hover:text-red-500/10 transition-colors">03</div>
+                    <div class="w-12 h-12 bg-red-500 text-white rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fa-solid fa-hourglass-half"></i>
+                    </div>
+                    <div class="font-bold text-slate-900 mb-1">무활동 검증</div>
+                    <p class="text-xs text-slate-500">5초 이상 움직임 부재 시 위험 최종 확정</p>
+                </div>
+                <div class="p-6 bg-white rounded-2xl border border-slate-200 text-center relative overflow-hidden group">
+                    <div class="text-4xl text-slate-200 absolute -top-2 -right-2 font-black group-hover:text-emerald-500/10 transition-colors">04</div>
+                    <div class="w-12 h-12 bg-emerald-500 text-white rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fa-solid fa-satellite-dish"></i>
+                    </div>
+                    <div class="font-bold text-slate-900 mb-1">SOS 발령</div>
+                    <p class="text-xs text-slate-500">GCS 위성 전송 및 워치 SOS 자동 발신</p>
+                </div>
+            </div>
+
+            <div class="glass-card p-10 rounded-3xl border-l-8 border-red-500 bg-red-50/30">
+                <div class="flex flex-col md:flex-row items-center space-y-6 md:space-y-0 md:space-x-10">
+                    <div class="w-32 h-32 bg-red-500 text-white rounded-3xl flex items-center justify-center text-5xl shadow-xl shadow-red-200 status-pulse">
+                        <i class="fa-solid fa-bell"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-2xl font-black text-slate-900 mb-3">긴급 위급상황 조치 가이드</h3>
+                        <p class="text-slate-600 mb-4 max-w-2xl leading-relaxed">
+                            알림이 발생하면 지상 관제 센터 화면에 승무원의 심박수 및 최종 스냅샷이 CRITICAL 상태로 노출됩니다. 
+                            동시에 기내 통신 시스템(PAs)을 통해 의료 전문가의 개입과 즉각적인 격리 조치를 유도하는 비상 지령이 전달됩니다.
+                        </p>
+                        <div class="flex flex-wrap gap-3">
+                            <span class="px-3 py-1 bg-red-100 text-red-600 rounded-full text-xs font-bold">#FailSafe_Flow</span>
+                            <span class="px-3 py-1 bg-red-100 text-red-600 rounded-full text-xs font-bold">#골든타임_보장</span>
+                            <span class="px-3 py-1 bg-red-100 text-red-600 rounded-full text-xs font-bold">#위성_SOS</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Tab: Simulator -->
+        <section id="simulator" class="tab-content">
+            <div class="mb-8">
+                <h1 class="text-3xl font-black text-slate-900 mb-2">실시간 시스템 시뮬레이터</h1>
+                <p class="text-slate-500 leading-relaxed max-w-3xl">
+                    가상의 승무원 프로필을 생성하고 비행 환경 변수를 직접 조작해보세요. 
+                    피로 점수가 임계치를 넘을 때 시스템이 어떻게 반응하고 어떤 가이드를 제시하는지 확인할 수 있습니다.
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                <!-- Control Panel -->
+                <div class="lg:col-span-4 glass-card p-8 rounded-3xl bg-white">
+                    <h3 class="text-xl font-bold text-slate-900 mb-6">환경 변수 조절</h3>
+                    
+                    <div class="space-y-8">
+                        <div>
+                            <div class="flex justify-between text-sm font-bold mb-3">
+                                <span>누적 난기류 노출 (시간)</span>
+                                <span id="val-turb" class="text-sky-600">2h</span>
+                            </div>
+                            <input type="range" id="input-turb" min="0" max="10" step="0.5" value="2" 
+                                   class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-sky-500">
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-sm font-bold mb-3">
+                                <span>산소포화도 (SpO2)</span>
+                                <span id="val-spo2" class="text-sky-600">98%</span>
+                            </div>
+                            <input type="range" id="input-spo2" min="85" max="100" step="1" value="98" 
+                                   class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-sky-500">
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-sm font-bold mb-3">
+                                <span>심박변이도 (HRV)</span>
+                                <span id="val-hrv" class="text-sky-600">65ms</span>
+                            </div>
+                            <input type="range" id="input-hrv" min="10" max="100" step="5" value="65" 
+                                   class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-sky-500">
+                        </div>
+
+                        <div class="pt-6 border-t border-slate-200">
+                            <button onclick="triggerSim('fall')" class="w-full py-4 bg-red-600 text-white rounded-2xl font-black text-sm mb-3 hover:bg-red-700 transition-colors shadow-lg shadow-red-100">
+                                <i class="fa-solid fa-person-falling-burst mr-2"></i>낙상 이벤트 강제 발생
+                            </button>
+                            <button onclick="resetSim()" class="w-full py-4 bg-slate-100 text-slate-600 rounded-2xl font-bold text-sm hover:bg-slate-200 transition-colors">
+                                시뮬레이션 초기화
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Live Preview -->
+                <div class="lg:col-span-8 space-y-8">
+                    <!-- Gauge and Action Card -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div class="glass-card p-8 rounded-3xl flex flex-col items-center justify-center text-center bg-white">
+                            <h3 class="text-lg font-bold text-slate-900 mb-4">현재 피로 지수</h3>
+                            <div class="chart-container h-48 mb-2">
+                                <canvas id="simFatigueGauge"></canvas>
+                            </div>
+                            <div id="sim-status-badge" class="px-4 py-1 rounded-full text-xs font-black uppercase tracking-widest bg-emerald-100 text-emerald-600">
+                                NORMAL
+                            </div>
+                        </div>
+                        <div class="glass-card p-8 rounded-3xl bg-slate-900 text-white">
+                            <h3 class="text-lg font-bold mb-4 flex items-center">
+                                <i class="fa-solid fa-comment-medical text-sky-400 mr-2"></i>시스템 권고 수칙
+                            </h3>
+                            <div id="sim-action-guide" class="text-sm text-slate-400 leading-relaxed space-y-3">
+                                <div class="flex items-start space-x-3">
+                                    <i class="fa-solid fa-check text-sky-400 mt-1"></i>
+                                    <span>현재 승무원의 상태는 양호합니다. 통상적인 비행 스케줄을 유지하십시오.</span>
+                                </div>
+                                <div class="flex items-start space-x-3">
+                                    <i class="fa-solid fa-check text-sky-400 mt-1"></i>
+                                    <span>자율적인 수분 섭취와 간단한 스트레칭을 권장합니다.</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Sensor Detail Table -->
+                    <div class="glass-card p-8 rounded-3xl overflow-hidden bg-white">
+                        <h3 class="text-lg font-bold text-slate-900 mb-6">디바이스 상세 상태</h3>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-sm">
+                                <thead class="border-b border-slate-200">
+                                    <tr class="text-slate-500 font-bold">
+                                        <th class="pb-4">센서 구분</th>
+                                        <th class="pb-4">현재 값</th>
+                                        <th class="pb-4">상태</th>
+                                        <th class="pb-4">신뢰도</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-100">
+                                    <tr>
+                                        <td class="py-4 font-semibold">AIRFIT-Watch (PPG)</td>
+                                        <td id="td-ppg" class="py-4">72 bpm</td>
+                                        <td class="py-4"><span class="px-2 py-0.5 bg-emerald-100 text-emerald-600 rounded text-[10px] font-bold">ACTIVE</span></td>
+                                        <td class="py-4 text-slate-400">99.8%</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="py-4 font-semibold">Chest-Belt (Gyro)</td>
+                                        <td id="td-gyro" class="py-4">Stand (5°)</td>
+                                        <td class="py-4"><span class="px-2 py-0.5 bg-emerald-100 text-emerald-600 rounded text-[10px] font-bold">ACTIVE</span></td>
+                                        <td class="py-4 text-slate-400">98.5%</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="py-4 font-semibold">Gas Array (VOC)</td>
+                                        <td id="td-gas" class="py-4">12 ppb</td>
+                                        <td class="py-4"><span class="px-2 py-0.5 bg-emerald-100 text-emerald-600 rounded text-[10px] font-bold">ACTIVE</span></td>
+                                        <td class="py-4 text-slate-400">94.2%</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+</div>
+
+<script>
+    // Tab Switching Logic
+    function switchTab(tabId) {
+        document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+        document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active', 'hover:bg-slate-800'));
+        
+        document.getElementById(tabId).classList.add('active');
+        event.currentTarget.classList.add('active');
+        
+        // Add hover effect back to non-active items
+        document.querySelectorAll('.nav-item:not(.active)').forEach(nav => nav.classList.add('hover:bg-slate-800'));
+    }
+
+    // Chart Initialization
+    const fleetFatigueCtx = document.getElementById('fleetFatigueChart').getContext('2d');
+    const weightPieCtx = document.getElementById('weightPieChart').getContext('2d');
+    const bioStreamCtx = document.getElementById('biometricStreamChart').getContext('2d');
+    const gasThresholdCtx = document.getElementById('gasThresholdChart').getContext('2d');
+    const simFatigueCtx = document.getElementById('simFatigueGauge').getContext('2d');
+
+    // 1. Fleet Fatigue Area Chart
+    new Chart(fleetFatigueCtx, {
+        type: 'line',
+        data: {
+            labels: ['00:00', '04:00', '08:00', '12:00', '16:00', '20:00', '24:00'],
+            datasets: [{
+                label: 'Avg Fatigue Score',
+                data: [25, 40, 35, 65, 55, 30, 20],
+                borderColor: '#0ea5e9',
+                backgroundColor: 'rgba(14, 165, 233, 0.1)',
+                fill: true,
+                tension: 0.4
+            }]
+        },
+        options: {
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                y: { beginAtZero: true, max: 100 }
+            }
+        }
+    });
+
+    // 2. Weight Distribution Pie
+    new Chart(weightPieCtx, {
+        type: 'doughnut',
+        data: {
+            labels: ['HRV', 'RR', 'SpO2', 'Sleep', 'Turb'],
+            datasets: [{
+                data: [30, 15, 25, 20, 10],
+                backgroundColor: ['#0ea5e9', '#6366f1', '#f59e0b', '#ef4444', '#10b981']
+            }]
+        },
+        options: {
+            maintainAspectRatio: false,
+            plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } } }
+        }
+    });
+
+    // 3. Bio Stream Chart (Live Simulation)
+    const bioChart = new Chart(bioStreamCtx, {
+        type: 'line',
+        data: {
+            labels: Array(20).fill(''),
+            datasets: [
+                { label: 'HRV', data: Array(20).fill(65), borderColor: '#0ea5e9', tension: 0.3, pointRadius: 0 },
+                { label: 'HR', data: Array(20).fill(72), borderColor: '#ef4444', tension: 0.3, pointRadius: 0 }
+            ]
+        },
+        options: {
+            maintainAspectRatio: false,
+            animation: false,
+            scales: { y: { min: 40, max: 120 } }
+        }
+    });
+
+    // 4. Gas Threshold Chart
+    new Chart(gasThresholdCtx, {
+        type: 'bar',
+        indexAxis: 'y',
+        data: {
+            labels: ['VOC (ppb)', 'eCO2 (ppm)', 'Ethanol', 'H2'],
+            datasets: [{
+                label: 'Current Level',
+                data: [12, 450, 2200, 100],
+                backgroundColor: '#f59e0b'
+            }, {
+                label: 'Danger Threshold',
+                data: [30, 1000, 15000, 10000],
+                backgroundColor: '#cbd5e1'
+            }]
+        },
+        options: {
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } }
+        }
+    });
+
+    // 5. Simulator Fatigue Gauge
+    const simGauge = new Chart(simFatigueCtx, {
+        type: 'doughnut',
+        data: {
+            datasets: [{
+                data: [48, 52],
+                backgroundColor: ['#10b981', '#f1f5f9'],
+                circumference: 180,
+                rotation: 270,
+                borderWidth: 0
+            }]
+        },
+        options: {
+            maintainAspectRatio: false,
+            plugins: { tooltip: { enabled: false } },
+            cutout: '80%'
+        }
+    });
+
+    // Simulator Logic
+    const inputTurb = document.getElementById('input-turb');
+    const inputSpo2 = document.getElementById('input-spo2');
+    const inputHrv = document.getElementById('input-hrv');
+
+    function updateSim() {
+        const turb = parseFloat(inputTurb.value);
+        const spo2 = parseInt(inputSpo2.value);
+        const hrv = parseInt(inputHrv.value);
+
+        document.getElementById('val-turb').innerText = turb + 'h';
+        document.getElementById('val-spo2').innerText = spo2 + '%';
+        document.getElementById('val-hrv').innerText = hrv + 'ms';
+
+        // Calc Score
+        let score = (100 - hrv) * 0.4 + (100 - spo2) * 2 + (turb * 5);
+        score = Math.min(100, Math.max(0, Math.round(score)));
+
+        simGauge.data.datasets[0].data = [score, 100 - score];
+        
+        const badge = document.getElementById('sim-status-badge');
+        const guide = document.getElementById('sim-action-guide');
+
+        if (score < 40) {
+            simGauge.data.datasets[0].backgroundColor[0] = '#10b981';
+            badge.innerText = 'LOW / NORMAL';
+            badge.className = 'px-4 py-1 rounded-full text-xs font-black uppercase tracking-widest bg-emerald-100 text-emerald-600';
+            guide.innerHTML = '<div class="flex items-start space-x-3"><i class="fa-solid fa-check text-sky-400 mt-1"></i><span>현재 상태 양호. 통상 스케줄 유지.</span></div>';
+        } else if (score < 70) {
+            simGauge.data.datasets[0].backgroundColor[0] = '#f59e0b';
+            badge.innerText = 'ELEVATED / CAUTION';
+            badge.className = 'px-4 py-1 rounded-full text-xs font-black uppercase tracking-widest bg-amber-100 text-amber-600';
+            guide.innerHTML = '<div class="flex items-start space-x-3"><i class="fa-solid fa-circle-exclamation text-amber-400 mt-1"></i><span>피로 누적 감지. 10분 휴식 및 수분 섭취 권고.</span></div>';
+        } else {
+            simGauge.data.datasets[0].backgroundColor[0] = '#ef4444';
+            badge.innerText = 'CRITICAL / DANGER';
+            badge.className = 'px-4 py-1 rounded-full text-xs font-black uppercase tracking-widest bg-red-100 text-red-600 status-pulse';
+            guide.innerHTML = '<div class="flex items-start space-x-3"><i class="fa-solid fa-triangle-exclamation text-red-400 mt-1"></i><span>즉각 구역 교대 필요. 지상 보고 및 산소 공급 검토.</span></div>';
+        }
+        simGauge.update();
+    }
+
+    function triggerSim(type) {
+        if (type === 'fall') {
+            inputHrv.value = 15;
+            inputSpo2.value = 90;
+            updateSim();
+            document.getElementById('td-gyro').innerHTML = '<span class="text-red-600 font-bold">Lying (89°)</span>';
+            document.getElementById('td-ppg').innerHTML = '<span class="text-red-600 font-bold">45 bpm</span>';
+            alert("ALERT: 낙상 사고가 감지되었습니다! GCS 서버에 SOS 신호를 전송합니다.");
+        }
+    }
+
+    function resetSim() {
+        inputTurb.value = 2;
+        inputSpo2.value = 98;
+        inputHrv.value = 65;
+        document.getElementById('td-gyro').innerText = 'Stand (5°)';
+        document.getElementById('td-ppg').innerText = '72 bpm';
+        updateSim();
+    }
+
+    [inputTurb, inputSpo2, inputHrv].forEach(input => input.addEventListener('input', updateSim));
+
+    // Live Bio Data Animation
+    setInterval(() => {
+        bioChart.data.datasets[0].data.shift();
+        bioChart.data.datasets[0].data.push(60 + Math.random() * 10);
+        bioChart.data.datasets[1].data.shift();
+        bioChart.data.datasets[1].data.push(70 + Math.random() * 15);
+        bioChart.update();
+    }, 1000);
+
+    updateSim();
+</script>
+
+</body>
+</html>
