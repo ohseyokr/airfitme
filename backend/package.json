@@ -4,7 +4,6 @@
   "description": "AIRFITME FRMS Express Server",
   "main": "src/server.js",
   "scripts": {
-    "install": "npm install",
     "start": "node src/server.js"
   },
   "dependencies": {
