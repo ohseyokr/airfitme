@@ -49,7 +49,7 @@ app.get('/api/v1/frms/crew-status', async (req, res) => {
     try {
         const query = `
             SELECT DISTINCT ON (c.id) 
-                c.id as crew_id, c.name, c.rank, c.crew_id_tag,
+                c.id as crew_id, c.name, c.rank, c.crew_id_tag, c.aircraft,
                 t.heart_rate, t.hrv_ms, t.respiratory_rate, t.spo2_percent,
                 t.tvoc_ppb, t.co2_ppm, t.ethanol_raw, t.gyro_angle_pitch, t.fall_detected,
                 d.battery_level, t.recorded_at
