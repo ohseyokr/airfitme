@@ -3,8 +3,9 @@
   "version": "1.0.0",
   "description": "AIRFITME FRMS Express Server for Android 16 WebView Integration",
   "main": "server.js",
-  "scripts": {
-    "start": "node server.js"
+
+"scripts": {
+  "start": "node src/server.js"  
   },
   "dependencies": {
     "cors": "^2.8.5",
