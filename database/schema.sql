@@ -18,6 +18,7 @@ CREATE TABLE crew_profiles (
     crew_id_tag VARCHAR(20) UNIQUE NOT NULL, -- 사번 식별자 (예: CS65540)
     rank VARCHAR(20) NOT NULL,              -- 직급 (사무장, 부사무장 등)
     base_location VARCHAR(50) DEFAULT 'ICN',
+    aircraft VARCHAR(30) DEFAULT 'B777',     -- 탑승기종(항공기) 정보 컬럼 추가
     sleep_efficiency_avg NUMERIC(5,2) DEFAULT 88.00, -- 최근 평균 수면 효율 (%)
     emergency_contact VARCHAR(25) NOT NULL, -- 비상 연락처
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
@@ -86,10 +87,10 @@ CREATE INDEX IF NOT EXISTS idx_alerts_status ON safety_alerts(status);
 -- ==========================================
 
 -- 1) 승무원 가상 데이터 추가
-INSERT INTO crew_profiles (name, crew_id_tag, rank, base_location, sleep_efficiency_avg, emergency_contact) VALUES
-('김선수', 'CS65540', '사무장', 'ICN', 88.00, '+82-10-1234-5678'),
-('이서진', 'CS65541', '부사무장', 'ICN', 72.00, '+82-10-2345-6789'),
-('박지수', 'CS65542', 'CA승무원', 'ICN', 94.00, '+82-10-3456-7890');
+INSERT INTO crew_profiles (name, crew_id_tag, rank, base_location, aircraft, sleep_efficiency_avg, emergency_contact) VALUES
+('김선수', 'CS65540', '사무장', 'ICN', 'B777', 88.00, '+82-10-1234-5678'),
+('이서진', 'CS65541', '부사무장', 'ICN', 'A380', 72.00, '+82-10-2345-6789'),
+('박지수', 'CS65542', 'CA승무원', 'ICN', 'A350', 94.00, '+82-10-3456-7890');
 
 -- 2) 디바이스 정보 추가 (승무원 ID 매핑 정보와 동기화)
 INSERT INTO devices (device_uid, device_type, battery_level, status, paired_crew_id) VALUES
